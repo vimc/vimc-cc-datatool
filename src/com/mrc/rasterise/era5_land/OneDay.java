@@ -164,7 +164,7 @@ public class OneDay {
     OneDay D = new OneDay();
     String grib_file = temp_path + File.separator + "temp_"+year+((month < 10)?"0":"") + month + ((day < 10) ? "0":"") + day + ".grib";
       
-    System.out.print(year+"-"+((month < 10)?"0":"") + month + "-" + ((day < 10) ? "0":"") + day + " : ");
+    System.out.print("\n" + year+"-"+((month < 10)?"0":"") + month + "-" + ((day < 10) ? "0":"") + day + " : ");
       
     if (!new File(grib_file).exists()) return null;
 
