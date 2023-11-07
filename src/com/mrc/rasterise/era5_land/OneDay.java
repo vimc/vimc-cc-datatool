@@ -23,64 +23,74 @@ public class OneDay {
   float[][] rh_mean = new float[3600][1801];
   float[][] precip = new float[3600][1801];
 
+  public OneDay() {
+    for (int i = 0; i < 3600; i++)
+      for (int j = 0; j < 1801; j++)
+        for (int h = 0; h < 24; h++) {
+          tm[h][i][j] = Float.MAX_VALUE;
+          dp[h][i][j] = Float.MAX_VALUE;
+          rh[h][i][j] = Float.MAX_VALUE;
+        }
+  }
+
   void make_image(float[][] data) throws Exception  {
     BufferedImage bi = new BufferedImage(3600, 1801, BufferedImage.TYPE_3BYTE_BGR);
     float big = Float.NEGATIVE_INFINITY;
     float small = Float.POSITIVE_INFINITY;
-    for (int j=0; j<1801; j++) 
-      for (int i=0; i<3600; i++) {
+    for (int j = 0; j < 1801; j++)
+      for (int i = 0; i < 3600; i++) {
         big = Math.max(big,  data[i][j]);
         small = Math.min(small,  data[i][j]);
      }
-    
+
     float range = big - small;
-    
+
     int[] cc = new int[256];
-    for (int i=0; i<256; i++) cc[i] = new Color(i, i, i).getRGB();
-    
-    for (int j=0; j<1801; j++) 
-      for (int i=0; i<3600; i++) {
+    for (int i = 0; i < 256; i++) cc[i] = new Color(i, i, i).getRGB();
+
+    for (int j = 0; j<1801; j++)
+      for (int i = 0; i<3600; i++) {
         int col = (int) (((data[i][j] - small) / range) * 255);
         bi.setRGB(i, j, cc[col]);
       }
-  
+
     ImageIO.write(bi,  "PNG",  new File("test_temp.png"));
   }
-  
+
   void parse_record(int hour, GribRecord g) throws Exception {
     if (g.getDescription().equals("2 metre temperature")) {
       for (int x = 0; x < 3600; x++)
         for (int y = 0; y < 1801; y++)
           tm[hour][x][y] = g.getValue(x,  y) - 273.16f;
-      
+
       System.out.print("+");
-    
+
     } else if (g.getDescription().equals("2 metre dewpoint temperature")) {
-      for (int x = 0; x < 3600; x++) 
-        for (int y = 0; y < 1801; y++) 
+      for (int x = 0; x < 3600; x++)
+        for (int y = 0; y < 1801; y++)
           dp[hour][x][y] = g.getValue(x,  y) - 273.16f;
-    
+
     } else if (g.getDescription().equals("Total precipitation")) {
-      for (int i = 0; i < 3600; i++) 
+      for (int i = 0; i < 3600; i++)
         for (int j = 0; j < 1801; j++) {
           precip[i][j] = g.getValue(i, j);
           if (precip[i][j] > 1E20) precip[i][j] = Float.NaN;
         }
-    
+
     } else {
       System.out.println("ERROR - variable not recognised - "+g.getDescription());
-    } 
+    }
   }
 
   // Calculate relative humidity using August-Roche-Magnus equation from T and Td.
   // See https://qed.epa.gov/hms/meteorology/humidity/algorithms/
-  
+
   void calc_rh() {
-    for (int h = 0; h < 24; h++) 
-      for (int x = 0; x < 3600; x++) 
-        for (int y = 0; y < 1801; y++) 
+    for (int h = 0; h < 24; h++)
+      for (int x = 0; x < 3600; x++)
+        for (int y = 0; y < 1801; y++)
           rh[h][x][y] = ((tm[h][x][y] > 1E18) || (dp[h][x][y] > 1E18)) ? Float.POSITIVE_INFINITY :
-            (float) (100.0*(Math.exp((17.625 * dp[h][x][y]) / (243.04 + dp[h][x][y])) / 
+            (float) (100.0*(Math.exp((17.625 * dp[h][x][y]) / (243.04 + dp[h][x][y])) /
                             Math.exp((17.625 * tm[h][x][y]) / (243.04 + tm[h][x][y]))));
   }
 
@@ -90,7 +100,7 @@ public class OneDay {
       for (int j = 0; j < 1801; j++) {
         tm_min[i][j] = Float.MAX_VALUE;
         tm_max[i][j] = Float.NEGATIVE_INFINITY;
-        int tm_counter=0;
+        int tm_counter = 0;
         tm_mean[i][j] = 0;
         rh_min[i][j] = Float.MAX_VALUE;
         rh_max[i][j] = Float.NEGATIVE_INFINITY;
@@ -157,19 +167,19 @@ public class OneDay {
     rh_min[xp][yp] = minrh / count;
     precip[xp][yp] = prec / count;
   }
-  
-  
-  
+
+
+
   public static OneDay get_day_data(String temp_path, String precip_path, int year, int month, int day) throws Exception {
     OneDay D = new OneDay();
     String grib_file = temp_path + File.separator + "temp_"+year+((month < 10)?"0":"") + month + ((day < 10) ? "0":"") + day + ".grib";
-      
+
     System.out.print("\n" + year+"-"+((month < 10)?"0":"") + month + "-" + ((day < 10) ? "0":"") + day + " : ");
-      
+
     if (!new File(grib_file).exists()) return null;
 
     GribFile grb = new GribFile(grib_file);
-      
+
     int no_recs = grb.getRecordCount();
     for (int i = 1; i <= no_recs; i++) {
       GribRecord grecord = grb.getRecord(i);
@@ -177,16 +187,16 @@ public class OneDay {
       int hour = cal.get(Calendar.HOUR_OF_DAY);
       D.parse_record(hour, grecord);
     }
-    
+
     D.calc_rh();
-    D.calc_min_max_mean();    
-    
+    D.calc_min_max_mean();
+
     // Min, max, mean
-        
+
     // Total precipitation at 00:00 is the total precipitation in the previous 24 hours.
     // The counter is then reset, and at 01:00 the numbers will be zero and rising again.
     // Note that months start at zero in GregorianCalendar.
-    
+
     GregorianCalendar gc = new GregorianCalendar();
     gc.setTimeInMillis(System.currentTimeMillis());
     gc.set(GregorianCalendar.DATE, 5);
@@ -198,7 +208,7 @@ public class OneDay {
     year = gc.get(GregorianCalendar.YEAR);
     month = gc.get(GregorianCalendar.MONTH) + 1;
     day = gc.get(GregorianCalendar.DATE);
-    
+
     grib_file = precip_path + File.separator + "precip_"+year+((month < 10)?"0":"") + month + ((day < 10) ? "0":"") + day + ".grib";
     grb = new GribFile(grib_file);
     no_recs = grb.getRecordCount();
