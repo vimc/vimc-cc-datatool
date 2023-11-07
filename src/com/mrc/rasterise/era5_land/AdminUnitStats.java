@@ -4,7 +4,7 @@ public class AdminUnitStats {
   double mint_lo, mint_avg, mint_hi, meant_lo, meant_avg, meant_hi, maxt_lo, maxt_avg, maxt_hi;
   double prec_lo, prec_avg, prec_hi;
   double minr_lo, minr_avg, minr_hi, meanr_lo, meanr_avg, meanr_hi, maxr_lo, maxr_avg, maxr_hi;
-  
+
   int count;
   void init() {
     count = 0;
@@ -29,13 +29,13 @@ public class AdminUnitStats {
     prec_lo = Double.POSITIVE_INFINITY;
     prec_avg = 0;
     prec_hi = Double.NEGATIVE_INFINITY;
-        
+
   }
-  
+
   AdminUnitStats() {
     init();
   }
-  
+
   void update(OneDay D, int x, int y, int pop) {
     count+=pop;
     mint_lo = Math.min(mint_lo, D.tm_min[x][y]);
@@ -47,7 +47,7 @@ public class AdminUnitStats {
     maxt_lo = Math.min(maxt_lo, D.tm_max[x][y]);
     maxt_avg += (D.tm_max[x][y] * pop);
     maxt_hi = Math.max(maxt_hi, D.tm_max[x][y]);
-    
+
     minr_lo = Math.min(minr_lo, D.rh_min[x][y]);
     minr_avg += (D.rh_min[x][y] * pop);
     minr_hi = Math.max(minr_hi, D.rh_min[x][y]);
@@ -57,13 +57,13 @@ public class AdminUnitStats {
     maxr_lo = Math.min(maxr_lo, D.rh_max[x][y]);
     maxr_avg += (D.rh_max[x][y] * pop);
     maxr_hi = Math.max(maxr_hi, D.rh_max[x][y]);
-    
+
     prec_lo = Math.min(prec_lo, D.precip[x][y]);
     prec_avg += (D.precip[x][y] * pop);
     prec_hi = Math.max(prec_hi, D.precip[x][y]);
-          
+
   }
-  
+
   void finalise() {
     mint_avg /= (double) count;
     meant_avg /= (double) count;
